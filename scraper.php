@@ -40,7 +40,7 @@ foreach ($dapara as $thispara) {
     $record['date_scraped'] = date('Y-m-d');
     $record['comment_url'] = 'mailto:kc@kingborough.tas.gov.au';
 
-    var_dump($record);
+//    var_dump($record);
     
 //    $existingRecords = scraperwiki::select("* from data where `council_reference`='" . $record['council_reference'] . "'");
 //    if (count($existingRecords) == 0) {
