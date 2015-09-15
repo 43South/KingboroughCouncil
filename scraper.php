@@ -36,7 +36,7 @@ foreach ($dapara as $thispara) {
     // $record['info_url'] = $kcbase . $addressDateAnchor->href;
     $record['info_url'] = $dapage;
     //there's probably a clever way to do this
-    $record['council_reference'] = explode(' ', trim(strrchr($record['info_url'], '/'), '/'))[0];
+    $record['council_reference'] = explode(' ', trim(strrchr($kcbase . $addressDateAnchor->href, '/'), '/'))[0];
     $descriptionspan = $thispara->find('span', 0);
     $record['description'] = $descriptionspan->plaintext;
     $record['date_scraped'] = date('Y-m-d');
