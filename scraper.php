@@ -32,7 +32,9 @@ foreach ($dapara as $thispara) {
     $record['address'] = $parts[0] . ', TAS';
     $expiry = $parts[1];
     $record['on_notice_to'] = date('Y-m-d', strtotime($expiry));
-    $record['info_url'] = $kcbase . $addressDateAnchor->href;
+    // Set more_info to the DA page because unfortunately the council takes the PDFs down
+    // $record['info_url'] = $kcbase . $addressDateAnchor->href;
+    $record['info_url'] = $dapage;
     //there's probably a clever way to do this
     $record['council_reference'] = explode(' ', trim(strrchr($record['info_url'], '/'), '/'))[0];
     $descriptionspan = $thispara->find('span', 0);
