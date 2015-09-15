@@ -44,13 +44,13 @@ foreach ($dapara as $thispara) {
 
 //    var_dump($record);
     
-//    $existingRecords = scraperwiki::select("* from data where `council_reference`='" . $record['council_reference'] . "'");
-//    if (count($existingRecords) == 0) {
-//        print ("Saving record " . $record['council_reference'] . "\n");
+    $existingRecords = scraperwiki::select("* from data where `council_reference`='" . $record['council_reference'] . "'");
+    if (count($existingRecords) == 0) {
+        print ("Saving record " . $record['council_reference'] . "\n");
         //print_r ($record);
-        scraperwiki::save_sqlite(array('council_reference'), $record, 'data');
-//    } else {
-//        print ("Skipping already saved record " . $record['council_reference'] . "\n");
-//    }
+        scraperwiki::save(array('council_reference'), $record);
+    } else {
+        print ("Skipping already saved record " . $record['council_reference'] . "\n");
+    }
 }
 ?>
