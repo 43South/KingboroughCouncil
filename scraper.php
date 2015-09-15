@@ -29,7 +29,7 @@ foreach ($dapara as $thispara) {
     $addressDateAnchor = $thispara->find('a', 1);
     $addressDateText = $addressDateAnchor->plaintext;
     $parts = explode(' - Representation expiry date is', $addressDateText);
-    $record['address'] = $parts[0] . ',tas, au';
+    $record['address'] = $parts[0] . ', TAS';
     $expiry = $parts[1];
     $record['on_notice_to'] = date('Y-m-d', strtotime($expiry));
     $record['info_url'] = $kcbase . $addressDateAnchor->href;
