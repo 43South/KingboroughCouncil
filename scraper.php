@@ -29,7 +29,7 @@ foreach ($dapara as $thispara) {
     $addressDateAnchor = $thispara->find('a', 1);
     $addressDateText = $addressDateAnchor->plaintext;
     $parts = explode(' - Representation expiry date is', $addressDateText);
-    $record['address'] = $parts[0] . ', TAS';
+    $record['address'] = htmlspecialchars_decode($parts[0] . ', TAS');
     $expiry = $parts[1];
     $record['on_notice_to'] = date('Y-m-d', strtotime($expiry));
     // Set more_info to the DA page because unfortunately the council takes the PDFs down
@@ -38,7 +38,7 @@ foreach ($dapara as $thispara) {
     //there's probably a clever way to do this
     $record['council_reference'] = explode(' ', trim(strrchr($kcbase . $addressDateAnchor->href, '/'), '/'))[0];
     $descriptionspan = $thispara->find('span', 0);
-    $record['description'] = $descriptionspan->plaintext;
+    $record['description'] = htmlspecialchars_decode($descriptionspan->plaintext);
     $record['date_scraped'] = date('Y-m-d');
     $record['comment_url'] = 'mailto:kc@kingborough.tas.gov.au';
 
