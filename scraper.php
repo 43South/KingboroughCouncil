@@ -40,15 +40,13 @@ foreach ($dapara as $thispara) {
     $record['date_scraped'] = date('Y-m-d');
     $record['comment_url'] = 'mailto:kc@kingborough.tas.gov.au';
 
-//    var_dump($record);
-    
-//    $existingRecords = scraperwiki::select("* from data where `council_reference`='" . $record['council_reference'] . "'");
-//    if (count($existingRecords) == 0) {
-//        print ("Saving record " . $record['council_reference'] . "\n");
-        print_r ($record);
+    $existingRecords = scraperwiki::select("* from data where `council_reference`='" . $record['council_reference'] . "'");
+    if (count($existingRecords) == 0) {
+        print ("Saving record " . $record['council_reference'] . "\n");
+//        print_r ($record);
         scraperwiki::save_sqlite(array('council_reference'), $record, 'data');
-//    } else {
-//        print ("Skipping already saved record " . $record['council_reference'] . "\n");
-//    }
+    } else {
+        print ("Skipping already saved record " . $record['council_reference'] . "\n");
+    }
 }
 ?>
