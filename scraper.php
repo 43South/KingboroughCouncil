@@ -29,14 +29,14 @@ foreach ($dapara as $thispara) {
     $addressDateAnchor = $thispara->find('a', 1);
     $addressDateText = $addressDateAnchor->plaintext;
     $parts = explode(' - Representation expiry date is', $addressDateText);
-    $record['address'] = htmlspecialchars($parts[0] . ',tas, au');
+    $record['address'] = $parts[0] . ',tas, au';
     $expiry = $parts[1];
     $record['on_notice_to'] = date('Y-m-d', strtotime($expiry));
     $record['info_url'] = $kcbase . $addressDateAnchor->href;
     //there's probably a clever way to do this
     $record['council_reference'] = explode(' ', trim(strrchr($record['info_url'], '/'), '/'))[0];
     $descriptionspan = $thispara->find('span', 0);
-    $record['description'] = htmlspecialchars($descriptionspan->plaintext);
+    $record['description'] = $descriptionspan->plaintext;
     $record['date_scraped'] = date('Y-m-d');
     $record['comment_url'] = 'mailto:kc@kingborough.tas.gov.au';
 
