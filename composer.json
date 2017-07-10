@@ -10,6 +10,8 @@
         "ext-sqlite3": "*",
         "ext-pdo_sqlite": "*",
         "ext-gd": "*",
-        "ext-mbstring": "*"
+        "ext-mbstring": "*",
+        "byjg/pgbrowser" : "1.0.*",
+        "sunra/php-simple-html-dom-parser": "1.5.2"
     }
 }
