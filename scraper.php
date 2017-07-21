@@ -1,56 +1,44 @@
 <?php
-//many thanks to author of fairfield scraper. rpa 14/092015
-set_include_path(get_include_path() . PATH_SEPARATOR . '../scraperwiki-php/');
+require_once 'vendor/autoload.php';
+require_once 'vendor/openaustralia/scraperwiki/scraperwiki.php';
 
-require 'scraperwiki.php';
+use PGuardiario\PGBrowser;
+use Sunra\PhpSimple\HtmlDomParser;
+
 date_default_timezone_set('Australia/Hobart');
-require 'simple_html_dom.php';
 
-$kcbase = 'http://kingborough.tas.gov.au/';
-$dapage = $kcbase . 'page.aspx?u=592';
+$url_base = 'https://www.kingborough.tas.gov.au/development/planning-notices/';
+$comment_url = 'mailto:kc@kingborough.tas.gov.au';
 
-$html = scraperwiki::scrape($dapage);
-$dom = new simple_html_dom();
-$dom->load($html);
-$dapara = $dom->find("table.uLayoutTable td.uContentListDesc p.noLeading");
+$browser = new PGBrowser();
+$page    = $browser->get($url_base);
 
-print 'number of records' . sizeof($dapara);
+$dom = HtmlDomParser::str_get_html($page->html);
 
-foreach ($dapara as $thispara) {
-    //<p class="noLeading">
-    //  <a href="webdata/resources/files/DAS-2015-42  12-09.pdf" onmouseover="self.status='';return true;" target="_blank">
-    //    <img style="vertical-align:middle;margin-right:3px;" alt="pdf" src="/webdata/graphics/mime_pdf.gif">
-    //  </a>
-    //  <a href="webdata/resources/files/DAS-2015-42  12-09.pdf" onmouseover="self.status='';return true;" target="_blank">164 Roslyn Avenue, Blackmans Bay - Representation expiry date is 25 September 2015</a>
-    //  <br>
-    //  <span style="padding-left:25px;">Subdivision of one lot and balance</span>
-    //</p>    
-    $record = array();
-    $addressDateAnchor = $thispara->find('a', 1);
-    $addressDateText = $addressDateAnchor->plaintext;
-    $parts = explode(' - Representation expiry date is', $addressDateText);
-    $record['address'] = htmlspecialchars_decode($parts[0] . ', TAS');
-    $expiry = $parts[1];
-    $record['on_notice_to'] = date('Y-m-d', strtotime($expiry));
-    // Set more_info to the DA page because unfortunately the council takes the PDFs down
-    // $record['info_url'] = $kcbase . $addressDateAnchor->href;
-    $record['info_url'] = $dapage;
-    //there's probably a clever way to do this
-    $record['council_reference'] = explode(' ', trim(strrchr($kcbase . $addressDateAnchor->href, '/'), '/'))[0];
-    $descriptionspan = $thispara->find('span', 0);
-    $record['description'] = htmlspecialchars_decode($descriptionspan->plaintext);
-    $record['date_scraped'] = date('Y-m-d');
-    $record['comment_url'] = 'mailto:kc@kingborough.tas.gov.au';
+foreach ( $dom->find("table.table",0)->children(1)->find('tr') as $tr ) {
+    $council_reference = strrev(explode("/", strrev($tr->find("a",0)->href))[0]);                             # get the file name
+    $council_reference = explode("-", $council_reference);                                                    # split up
+    $council_reference = $council_reference[0] . '-' . $council_reference[1] . '-' . $council_reference[2];   # only pickup the first three fields
 
-//    var_dump($record);
-    
+    # Put all information in an array
+    $record = [
+        'council_reference' => $council_reference,
+        'address'           => trim(htmlspecialchars_decode($tr->find("td",0)->plaintext)) . ', Tasmania',
+        'description'       => trim(htmlspecialchars_decode($tr->find("td",3)->plaintext)),
+        'info_url'          => $url_base,
+        'comment_url'       => $comment_url,
+        'date_scraped'      => date('Y-m-d'),
+        'on_notice_from'    => date('Y-m-d', strtotime($tr->find("td",1)->plaintext)),
+        'on_notice_to'      => date('Y-m-d', strtotime($tr->find("td",2)->plaintext))
+    ];
+
+    # Check if record exist, if not, INSERT, else do nothing
     $existingRecords = scraperwiki::select("* from data where `council_reference`='" . $record['council_reference'] . "'");
-    if (count($existingRecords) == 0) {
-        print ("Saving record " . $record['council_reference'] . "\n");
-        //print_r ($record);
+    if ( count($existingRecords) == 0 ) {
+        print ("Saving record " . $record['council_reference'] . " - " . $record['address'] ."\n");
+//         print_r ($record);
         scraperwiki::save(array('council_reference'), $record);
     } else {
-        print ("Skipping already saved record " . $record['council_reference'] . "\n");
+        print ("Skipping already saved record - " . $record['council_reference'] . "\n");
     }
 }
-?>
