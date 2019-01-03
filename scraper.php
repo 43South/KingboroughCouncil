@@ -1,44 +1,70 @@
 <?php
-require_once 'vendor/autoload.php';
-require_once 'vendor/openaustralia/scraperwiki/scraperwiki.php';
+//many thanks to author of fairfield scraper. rpa 14/09/2015
+//update to work with new council website. rpa 2/1/2019
 
-use PGuardiario\PGBrowser;
-use Sunra\PhpSimple\HtmlDomParser;
+set_include_path(get_include_path() . PATH_SEPARATOR . '../scraperwiki-php/');
 
+require 'scraperwiki.php';
 date_default_timezone_set('Australia/Hobart');
+require 'simple_html_dom.php';
 
-$url_base = 'https://www.kingborough.tas.gov.au/development/planning-notices/';
-$comment_url = 'mailto:kc@kingborough.tas.gov.au';
+$kcbase = 'http://kingborough.tas.gov.au/';
+$dapage = $kcbase . 'development/planning-notices/';
 
-$browser = new PGBrowser();
-$page    = $browser->get($url_base);
+$dateformat = 'Y-m-d';
 
-$dom = HtmlDomParser::str_get_html($page->html);
+$html = scraperwiki::scrape($dapage);
+$dom = new simple_html_dom();
+$dom->load($html);
+//I was using table>tbody>tr but the parser seems to ignore the tbody and keeps picking up the heading, so I'll just cut it off instead.
+$dapara = $dom->find("table > tr");
+$dapara = array_slice($dapara, 1);
 
-foreach ( $dom->find("table.table",0)->children(1)->find('tr') as $tr ) {
-    $council_reference = strrev(explode("/", strrev($tr->find("a",0)->href))[0]);                             # get the file name
-    $council_reference = explode("-", $council_reference);                                                    # split up
-    $council_reference = $council_reference[0] . '-' . $council_reference[1] . '-' . $council_reference[2];   # only pickup the first three fields
+print 'number of records: ' . sizeof($dapara);
 
-    # Put all information in an array
-    $record = [
-        'council_reference' => $council_reference,
-        'address'           => trim(htmlspecialchars_decode($tr->find("td",0)->plaintext)) . ', Tasmania',
-        'description'       => trim(htmlspecialchars_decode($tr->find("td",3)->plaintext)),
-        'info_url'          => $url_base,
-        'comment_url'       => $comment_url,
-        'date_scraped'      => date('Y-m-d'),
-        'on_notice_from'    => date('Y-m-d', strtotime($tr->find("td",1)->plaintext)),
-        'on_notice_to'      => date('Y-m-d', strtotime($tr->find("td",2)->plaintext))
-    ];
+foreach ($dapara as $thispara) {
+    //<p class="noLeading">
+    //  <a href="webdata/resources/files/DAS-2015-42  12-09.pdf" onmouseover="self.status='';return true;" target="_blank">
+    //    <img style="vertical-align:middle;margin-right:3px;" alt="pdf" src="/webdata/graphics/mime_pdf.gif">
+    //  </a>
+    //  <a href="webdata/resources/files/DAS-2015-42  12-09.pdf" onmouseover="self.status='';return true;" target="_blank">164 Roslyn Avenue, Blackmans Bay - Representation expiry date is 25 September 2015</a>
+    //  <br>
+    //  <span style="padding-left:25px;">Subdivision of one lot and balance</span>
+    //</p>    
 
-    # Check if record exist, if not, INSERT, else do nothing
+//    <td>27 Cox Drive, Dennes Point</td>
+//    <td>12 Dec 2018</td>
+//    <td>3 Jan 2019</td>
+//                                        
+//    <td>Extension to dwelling (including deck) alterations and outbuilding (carport)</td>
+//
+//    <td>
+//    <a style="margin-bottom: 3px; margin-right: 3px;" href="https://www.kingborough.tas.gov.au/wp-content/uploads/2019/01/DA-2018-550-27-Cox-Drive.pdf" class="btn-sm btn btn-primary">Application documentation</a>                                        </td>
+
+    $record = array();
+    $info_url = $thispara->children(4) -> find("a",0)->href;
+    $ref_start = strpos($info_url, "/DA");
+    $file_name = substr($info_url, $ref_start + 1); // +1 to drop the leading slash
+    //this is an ugly way of finding the first three hyphen delimited fields in the filename
+    $council_ref = implode("-", array_slice(explode("-", $file_name), 0, 3));
+    $record['council_reference'] = $council_ref;
+    $record['address'] = $thispara->children(0) -> innertext . ', Tas';
+    $record['description'] = $thispara->children(3) -> innertext;
+    $record['info_url'] = $info_url;
+    $record['comment_url'] = 'mailto:kc@kingborough.tas.gov.au';
+    $record['date_scraped'] = date($dateformat);
+//    $record['date_received'] = 
+    //this date format conversion is a bit fragile, but we'll have to be brave
+    $record['on_notice_from'] = date($dateformat, strtotime($thispara->children(1)->innertext));
+    $record['on_notice_to'] = date($dateformat, strtotime($thispara->children(2)->innertext));
+
     $existingRecords = scraperwiki::select("* from data where `council_reference`='" . $record['council_reference'] . "'");
-    if ( count($existingRecords) == 0 ) {
-        print ("Saving record " . $record['council_reference'] . " - " . $record['address'] ."\n");
-//         print_r ($record);
-        scraperwiki::save(array('council_reference'), $record);
+    if (count($existingRecords) == 0) {
+        print ("Saving record " . $record['council_reference'] . "\n");
+//        print_r ($record);
+        scraperwiki::save_sqlite(array('council_reference'), $record, 'data');
     } else {
-        print ("Skipping already saved record - " . $record['council_reference'] . "\n");
+        print ("Skipping already saved record " . $record['council_reference'] . "\n");
     }
 }
+?>
