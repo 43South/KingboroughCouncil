@@ -14,7 +14,7 @@ date_scraped = datetime.now().isoformat()
 for da in dalist.find_all('tr'):
     cells = da.find_all('td')
     if len(cells) > 0:
-        address = cells[0].get_text()
+        address = cells[0].get_text() + ', Tasmania, Australia'
         on_notice_from = datetime.strptime(cells[1].get_text(), '%d %b %Y').strftime('%Y-%m-%d')
         on_notice_to = datetime.strptime(cells[2].get_text(), '%d %b %Y').strftime('%Y-%m-%d')
         description = cells[3].get_text()
@@ -29,4 +29,5 @@ for da in dalist.find_all('tr'):
           'on_notice_from': on_notice_from,
           'on_notice_to': on_notice_to
         }
+        print(record)
         scraperwiki.sqlite.save(unique_keys=['council_reference'], data=record, table_name="data")
